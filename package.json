@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-   "type": "module",
+  "type": "module",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
@@ -17,6 +17,7 @@
     "express": "^5.2.1",
     "google-auth-library": "^10.6.1",
     "googleapis": "^171.4.0",
+    "mongodb": "^7.1.0",
     "mongoose": "^9.2.4",
     "node": "^25.8.0",
     "node-telegram-bot-api": "^0.67.0",
