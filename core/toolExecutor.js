@@ -1,6 +1,7 @@
 import { getCurrentTime } from '../tools/systemTools.js'
+import { getEmails } from '../tools/emailTools.js'
 
-export async function executeTool(toolName, toolArgs) {
+export async function executeTool(toolName, toolArgs, userId) {
   console.log(`Executing tool: ${toolName}`, toolArgs)
 
   switch (toolName) {
@@ -9,9 +10,6 @@ export async function executeTool(toolName, toolArgs) {
 
     case 'get_emails':
       return await getEmails(userId, toolArgs.count || 5)
-
-    case 'send_email':
-      return await sendEmail(userId, toolArgs.to, toolArgs.subject, toolArgs.body)
 
     default:
       return { error: `Unknown tool: ${toolName}` }

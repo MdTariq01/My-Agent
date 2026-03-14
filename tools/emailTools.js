@@ -1,6 +1,6 @@
 import { google } from "googleapis"
-import { getOAuthClient } from "../auth/googleAuth"
-import User from './models/User.model.js'
+import { getOAuthClient } from "../auth/googleAuth.js"
+import User from '../models/User.model.js'
 
 async function getGmailClient(userId) {
     const user = await User.findOne({ userId })

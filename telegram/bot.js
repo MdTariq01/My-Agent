@@ -11,7 +11,7 @@ const model = genAI.getGenerativeModel({
   You are helpful, concise and proactive.
   You act on behalf of the user autonomously.
   When you need information, use the tools available to you.
-  When asked about emails, always use get_emails tool.`,
+  When showing emails, format them clearly and mention who they are from and the subject.`,
   tools: [{ functionDeclarations: toolDefinitions }]
 })
 
@@ -19,7 +19,6 @@ let bot
 const conversations = {}
 
 async function chat(chatId, userMessage, userId) {
-
   if (!conversations[chatId]) {
     conversations[chatId] = model.startChat({ history: [] })
   }
@@ -41,6 +40,7 @@ async function chat(chatId, userMessage, userId) {
 
     console.log(`Gemini calling tool: ${toolName}`)
 
+    // pass userId to tool executor
     const toolResult = await executeTool(toolName, toolArgs, userId)
 
     console.log(`Tool result:`, toolResult)
@@ -62,7 +62,6 @@ export function startBot() {
 
   bot = new TelegramBot(token, { polling: true })
 
-  // handle /start command
   bot.onText(/\/start/, async (msg) => {
     const { handleStart } = await import('./registration.js')
     await handleStart(bot, msg)
@@ -80,17 +79,16 @@ export function startBot() {
     bot.sendChatAction(chatId, 'typing')
 
     try {
-      // find user in MongoDB
+      // get userId from MongoDB using telegramChatId
       const user = await User.findOne({ telegramChatId: String(chatId) })
 
       if (!user) {
-        await bot.sendMessage(chatId, 'Please send /start to set up your account first.')
+        await bot.sendMessage(chatId, 'Please send /start first to set up your account.')
         return
       }
 
       const reply = await chat(chatId, text, user.userId)
       await bot.sendMessage(chatId, reply)
-
     } catch (error) {
       console.error('Error:', error)
       await bot.sendMessage(chatId, 'Something went wrong.')
