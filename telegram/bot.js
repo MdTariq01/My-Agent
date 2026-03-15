@@ -12,21 +12,24 @@ You are helpful, concise and proactive.
 You act on behalf of the user autonomously.
 When you need information, use the tools available to you.
 
-When checking emails, classify each one as:
-- URGENT: recruiter emails, interview calls, internship offers, deadline reminders, emails needing a reply
-- NORMAL: college emails, project updates, general info
-- IGNORE: newsletters, promotions, OTP, transaction alerts, no-reply emails
+You can help with anything — answer questions, have conversations, help with code, and also manage emails.
 
-When showing emails always format exactly like this:
+Only check emails when the user explicitly asks about emails.
 
+When showing emails classify each one as:
+- URGENT: recruiter emails, interview calls, internship offers, deadline reminders
+- NORMAL: college emails, project updates, general info  
+- IGNORE: newsletters, promotions, OTP, transaction alerts
+
+Format emails like:
 🔴 *URGENT*
 - [Subject] — from [Sender Name]
 
 🟡 *NORMAL*
 - [Subject] — from [Sender Name]
 
-Never show IGNORE emails unless user asks.
-Always end with a summary: "X urgent, X normal, X ignored."`,
+Always end email summaries with: "X urgent, X normal, X ignored."`,
+
   tools: [{ functionDeclarations: toolDefinitions }]
 })
 
@@ -55,19 +58,16 @@ async function chat(chatId, userMessage, userId) {
 
     console.log(`Gemini calling tool: ${toolName}`)
 
-    // pass userId to tool executor
     const toolResult = await executeTool(toolName, toolArgs, userId)
 
     console.log(`Tool result:`, toolResult)
 
-    result = await chatSession.sendMessage([
-      {
-        functionResponse: {
-          name: toolName,
-          response: toolResult
-        }
+    result = await chatSession.sendMessage([{
+      functionResponse: {
+        name: toolName,
+        response: toolResult
       }
-    ])
+    }])
   }
 }
 
@@ -83,32 +83,39 @@ export function startBot() {
   })
 
   bot.on('message', async (msg) => {
-    if (!msg.text) return
-    if (msg.text.startsWith('/')) return
+  if (!msg.text) return
+  if (msg.text.startsWith('/')) return
 
-    const chatId = msg.chat.id
-    const text = msg.text
+  const chatId = msg.chat.id
+  const text = msg.text
 
-    console.log(`Message from ${chatId}: ${text}`)
+  console.log(`Message from ${chatId}: ${text}`)
+  bot.sendChatAction(chatId, 'typing')
 
-    bot.sendChatAction(chatId, 'typing')
+  try {
+    // get user from DB
+    const user = await User.findOne({ telegramChatId: String(chatId) })
 
-    try {
-      // get userId from MongoDB using telegramChatId
-      const user = await User.findOne({ telegramChatId: String(chatId) })
-
-      if (!user) {
-        await bot.sendMessage(chatId, 'Please send /start first to set up your account.')
-        return
-      }
-
-      const reply = await chat(chatId, text, user.userId)
-      await bot.sendMessage(chatId, reply,  { parse_mode: 'Markdown' })
-    } catch (error) {
-      console.error('Error:', error)
-      await bot.sendMessage(chatId, 'Something went wrong.')
+    // if no user tell them to run /start
+    if (!user) {
+      await bot.sendMessage(chatId, 'Please send /start to set up your account.')
+      return
     }
-  })
+
+    // if gmail not connected remind them
+    if (!user.gmailConnected) {
+      await bot.sendMessage(chatId, 'Your Gmail is not connected yet. Please use the link sent earlier or send /start again.')
+      return
+    }
+
+    const reply = await chat(chatId, text, user.userId)
+    await bot.sendMessage(chatId, reply, { parse_mode: 'Markdown' })
+
+  } catch (error) {
+    console.error('Error:', error)
+    await bot.sendMessage(chatId, 'Something went wrong.')
+  }
+})
 
   bot.on('polling_error', (error) => {
     console.error('Telegram error:', error.code)
